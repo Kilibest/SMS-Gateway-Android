@@ -1,0 +1,22 @@
+{
+  "name": "android-sms-gateway-dashboard",
+  "version": "2.0.0",
+  "description": "Send and receive SMS via Android device",
+  "homepage": "https://github.com/berrnd/Android-SMS-Gateway",
+  "scripts": {
+    "start": "node proxy.js"
+  },
+  "keywords": [
+    "sms",
+    "android",
+    "gateway",
+    "messenger"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "better-sqlite3": "^12.11.1",
+    "ipaddr.js": "^2.4.0"
+  }
+}
