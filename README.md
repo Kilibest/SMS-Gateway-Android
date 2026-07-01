@@ -9,7 +9,7 @@
 
 Android SMS Gateway Dashboard is a full-featured web application that turns your Android device into an SMS gateway. It communicates with the [Android SMS Gateway](https://github.com/capcom6/android-sms-gateway) app running on your phone, providing a professional desktop UI to send and receive SMS messages through a local network or cloud API.
 
-
+https://res.cloudinary.com/dmztdgxfp/image/upload/v1782916280/epj9kqpfbtkqlss1uq9q.png
 The app runs as a single Node.js server that serves the dashboard UI and acts as a secure proxy to your Android device, overcoming CORS restrictions that would prevent a browser from directly accessing the device.
 
 
