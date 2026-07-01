@@ -1,0 +1,57 @@
+name: ✨ Feature Request
+description: Suggest an idea for this project
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an idea! Please describe what you'd like to see added.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Is your feature request related to a problem?
+      description: A clear and concise description of what the problem is.
+      placeholder: I'm always frustrated when I have to manually...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Describe the solution you'd like
+      description: What should happen? Be as specific as you can.
+      placeholder: Add a search bar to the contacts modal that filters by name and phone number in real-time...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Describe alternatives you've considered
+      description: Any workarounds or alternative solutions you've thought about.
+      placeholder: I could use a separate address book app, but it would be much better integrated here.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Feature area
+      description: Which part of the app would this affect?
+      multiple: true
+      options:
+        - Messaging / Composer
+        - Contacts
+        - Scheduling
+        - CSV / Bulk
+        - Templates
+        - Themes / UI
+        - API / Backend
+        - Deployment / Docker
+        - Other
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Add mockups, screenshots, or examples from other apps that do this well.

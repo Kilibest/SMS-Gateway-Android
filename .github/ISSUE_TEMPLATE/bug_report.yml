@@ -1,0 +1,68 @@
+name: 🐛 Bug Report
+description: Report a bug or unexpected behavior
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what's not working.
+      placeholder: When I try to send a message to a group, only the first recipient receives it...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: To Reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. Connect to the Android SMS Gateway app at 192.168.1.100:8080
+        2. Click '+' → 'Group'
+        3. Add 3 recipients and start a chat
+        4. Send a message
+        5. Only 1 recipient gets it
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+      placeholder: All group recipients should receive the message.
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / Logs
+      description: If applicable, add screenshots or browser console logs to help explain the problem.
+      render: shell
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Please complete the following information.
+      value: |
+        - OS: [e.g. Ubuntu 22.04, Windows 11]
+        - Browser: [e.g. Chrome 120, Firefox 121]
+        - Node.js version: [e.g. v20.11.0]
+        - Dashboard version: [commit hash or release]
+        - Android SMS Gateway app version: [e.g. v2.5.0]
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Add any other context about the problem here (e.g. network setup, device model).
