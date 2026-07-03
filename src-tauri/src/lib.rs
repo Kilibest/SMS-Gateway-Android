@@ -3,6 +3,7 @@ pub mod db;
 pub mod proxy;
 pub mod scheduler;
 pub mod server;
+pub mod embedded;
 
 use std::sync::Arc;
 use std::path::PathBuf;

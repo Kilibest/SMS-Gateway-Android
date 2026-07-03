@@ -13,7 +13,6 @@ use axum::{
 use serde::Deserialize;
 use serde_json::json;
 use tower_http::cors::CorsLayer;
-use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing::{info, error};
 use tokio::sync::Mutex;
@@ -37,14 +36,18 @@ fn json_error(msg: &str) -> (StatusCode, Json<ApiError>) {
     (StatusCode::BAD_REQUEST, Json(ApiError { error: msg.to_string() }))
 }
 
+/// Serve embedded frontend files (or fall back to disk for dev mode).
+async fn serve_frontend_handler(axum::extract::Path(path): axum::extract::Path<String>) -> Response {
+    crate::embedded::serve_frontend(&path)
+}
+
+/// Serve the root (index.html) for embedded frontend.
+async fn serve_root() -> Response {
+    crate::embedded::serve_frontend("")
+}
+
 /// Build and return the axum Router with all routes.
 pub fn build_router(state: AppState) -> Router {
-    let static_dir = state.project_dir.join("frontend");
-
-    // Serve static files from the frontend directory
-    let serve_dir = ServeDir::new(&static_dir)
-        .append_index_html_on_directories(true);
-
     Router::new()
         // ── Data API ────────────────────────────────────────────────────
         .route("/api/data", get(get_all_data).delete(clear_all_data))
@@ -66,8 +69,9 @@ pub fn build_router(state: AppState) -> Router {
         .route("/messages", get(get_received_messages))
         .route("/proxy", post(proxy_handler))
         .route("/proxy/", post(proxy_handler))
-        // ── Static file serving (fallback) ──────────────────────────────
-        .fallback_service(serve_dir)
+        // ── Embedded frontend files ─────────────────────────────────────
+        .route("/", get(serve_root))
+        .route("/*path", get(serve_frontend_handler))
         // ── Middleware ──────────────────────────────────────────────────
         .layer(TraceLayer::new_for_http())
         .layer(CorsLayer::permissive())

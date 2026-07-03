@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::path::PathBuf;
+use tauri::Manager;
 use tauri_plugin_updater::UpdaterExt;
 
 #[tokio::main]
@@ -13,34 +14,45 @@ async fn main() {
         )
         .init();
 
-    // Determine the project directory
+    // Determine the project directory (for reading frontend files)
     // In development: use the project root
     // In production (bundled): use the resource directory
-    let project_dir = if cfg!(debug_assertions) {
+    let resource_dir = if cfg!(debug_assertions) {
         std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
     } else {
-        // When bundled, the executable is in the resources directory
         let exe_dir = std::env::current_exe()
             .ok()
             .and_then(|p| p.parent().map(|p| p.to_path_buf()))
             .unwrap_or_else(|| PathBuf::from("."));
-        
-        // Try to find the project files relative to the exe
-        // In Tauri bundles, static files should be in ../Resources or similar
-        let resource_dir = exe_dir.parent()
+        exe_dir.parent()
             .map(|p| p.join("Resources"))
             .filter(|p| p.exists())
-            .unwrap_or_else(|| exe_dir.clone());
-
-        resource_dir
+            .unwrap_or_else(|| exe_dir.clone())
     };
 
-    // Database path
-    let db_path = project_dir.join("data.db");
-    let db_path_str = db_path.to_string_lossy().to_string();
+    // Data directory (for writing database and config) — must be writable
+    // In production, use ~/.local/share/sms-gateway/ (XDG data dir)
+    let data_dir = if cfg!(debug_assertions) {
+        resource_dir.clone()
+    } else {
+        std::env::var("HOME")
+            .ok()
+            .map(|home| {
+                let dir = PathBuf::from(home).join(".local").join("share").join("sms-gateway");
+                std::fs::create_dir_all(&dir).ok();
+                dir
+            })
+            .unwrap_or_else(|| resource_dir.clone())
+    };
 
-    // Initialize database and app state
-    let state = sms_gateway_lib::initialize(&db_path_str, &project_dir);
+    // Database path (writable location)
+    let db_path = data_dir.join("data.db");
+    let db_path_str = db_path.to_string_lossy().to_string();
+    tracing::info!("Data directory: {:?}", data_dir);
+    tracing::info!("Database: {:?}", db_path);
+
+    // Initialize database and app state (resource_dir for serving frontend, data_dir for DB)
+    let state = sms_gateway_lib::initialize(&db_path_str, &resource_dir);
     // project_dir is cloned into state, so we can still use it below
     let state_clone = state.clone();
 
@@ -65,24 +77,24 @@ async fn main() {
         .setup(move |app| {
             let url = format!("http://127.0.0.1:{}", port);
 
-            // Wait a moment for the server to be ready
-            std::thread::sleep(std::time::Duration::from_millis(200));
+            // Wait for the server to be ready by polling TCP port
+            for attempt in 0..30 {
+                if std::net::TcpStream::connect(format!("127.0.0.1:{}", port)).is_ok() {
+                    tracing::info!("Server ready after {} attempts", attempt + 1);
+                    break;
+                }
+                tracing::info!("Waiting for server... attempt {}", attempt + 1);
+                std::thread::sleep(std::time::Duration::from_millis(200));
+            }
 
-            // Create the webview window
-            let window = tauri::WebviewWindowBuilder::new(
-                app,
-                "main",
-                tauri::WebviewUrl::External(url.parse().unwrap()),
-            )
-            .title("SMS Gateway Dashboard")
-            .inner_size(1200.0, 800.0)
-            .min_inner_size(900.0, 600.0)
-            .resizable(true)
-            .center()
-            .build()?;
-
-            // Focus the window
-            let _ = window.set_focus();
+            // Get the existing "main" window created by Tauri config and navigate it
+            if let Some(window) = app.get_webview_window("main") {
+                if let Err(e) = window.navigate(url.parse().unwrap()) {
+                    tracing::error!("Failed to navigate to server: {}", e);
+                }
+                let _ = window.set_title("SMS Gateway Dashboard");
+                let _ = window.set_focus();
+            }
 
             // Check for updates on startup (non-blocking)
             let app_handle = app.handle().clone();
