@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::path::PathBuf;
+use tauri_plugin_updater::UpdaterExt;
 
 #[tokio::main]
 async fn main() {
@@ -59,6 +60,8 @@ async fn main() {
     // Start Tauri with the webview pointing to our local server
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .setup(move |app| {
             let url = format!("http://127.0.0.1:{}", port);
 
@@ -81,6 +84,35 @@ async fn main() {
             // Focus the window
             let _ = window.set_focus();
 
+            // Check for updates on startup (non-blocking)
+            let app_handle = app.handle().clone();
+            tokio::spawn(async move {
+                match app_handle.updater() {
+                    Ok(updater) => {
+                        match updater.check().await {
+                            Ok(Some(update)) => {
+                                tracing::info!("Update available: {}", update.version);
+                                if let Err(e) = update.download_and_install(|_event, _total| {}, || {}).await {
+                                    tracing::error!("Failed to install update: {}", e);
+                                } else {
+                                    tracing::info!("Update installed, restarting...");
+                                    app_handle.restart();
+                                }
+                            }
+                            Ok(None) => {
+                                tracing::info!("App is up to date");
+                            }
+                            Err(e) => {
+                                tracing::warn!("Update check failed: {}", e);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        tracing::warn!("Failed to get updater instance: {}", e);
+                    }
+                }
+            });
+
             Ok(())
         })
         .on_window_event(|_win, event| {
@@ -93,6 +125,7 @@ async fn main() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+
 
 /// Find an available TCP port by binding to port 0
 async fn find_available_port() -> u16 {
