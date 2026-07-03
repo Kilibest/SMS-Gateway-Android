@@ -380,90 +380,109 @@ android-sms-gateway-dashboard/
 
 ## Deployment
 
-### Local Network (Recommended)
+### Option 1: Desktop App (Tauri — Recommended)
 
-The simplest deployment — run the server on any machine on your local network:
+The easiest way for non-technical users. Build a standalone desktop application:
 
+```bash
+# Prerequisites: Rust toolchain and Tauri system deps
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+sudo apt install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
+  librsvg2-dev libsoup-3.0-dev libssl-dev build-essential
+
+# Build the desktop app
+cd src-tauri
+cargo tauri build
+
+# Installer located at:
+# Linux:   src-tauri/target/release/bundle/deb/  or  AppImage
+# Windows: src-tauri/target/release/bundle/msi/
+# macOS:   src-tauri/target/release/bundle/dmg/
 ```
-npm start  
-\# or  
+
+The app starts a local server on port 3000 and opens a native window. No browser or terminal needed.
+
+### Option 2: Local Network (Node.js)
+
+Run the server on any machine on your local network:
+
+```bash
+npm start
+# or
 bash start.sh
 ```
 
-All devices on the same network can access the dashboard at `http://\<your-ip\>:3000`.
+Access the dashboard at `http://\<your-ip\>:3000` from any device on the same network.
 
-### Production Server
+### Option 3: Production Server (systemd)
 
-For a more permanent setup:
+```bash
+sudo tee /etc/systemd/system/sms-gateway.service << EOF
+[Unit]
+Description=Android SMS Gateway Dashboard
+After=network.target
 
-```
-\# Install as a systemd service (Linux)  
-sudo tee /etc/systemd/system/sms-gateway.service \<\< EOF  
-\[Unit\]  
-Description=Android SMS Gateway Dashboard  
-After=network.target  
-  
-\[Service\]  
-Type=simple  
-User=your-user  
-WorkingDirectory=/path/to/android-sms-gateway-dashboard  
-ExecStart=/usr/bin/node proxy.js  
-Restart=on-failure  
-RestartSec=5  
-  
-\[Install\]  
-WantedBy=multi-user.target  
-EOF  
-  
-sudo systemctl daemon-reload  
-sudo systemctl enable sms-gateway  
+[Service]
+Type=simple
+User=your-user
+WorkingDirectory=/path/to/android-sms-gateway-dashboard
+ExecStart=/usr/bin/node proxy.js
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable sms-gateway
 sudo systemctl start sms-gateway
 ```
 
-### Docker
+### Option 4: Docker
 
+```dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --production
+COPY . .
+EXPOSE 3000
+CMD ["node", "proxy.js"]
 ```
-\# Dockerfile  
-FROM node:20-alpine  
-WORKDIR /app  
-COPY package\*.json ./  
-RUN npm ci --production  
-COPY . .  
-EXPOSE 3000  
-CMD \["node", "proxy.js"\]
 
-docker build -t sms-gateway .  
+```bash
+docker build -t sms-gateway .
 docker run -d -p 3000:3000 --name sms-gateway sms-gateway
 ```
 
 ### Reverse Proxy (Nginx)
 
-```
-server \{  
-    listen 80;  
-    server\_name sms-gateway.example.com;  
-  
-    location / \{  
-        proxy\_pass http://localhost:3000;  
-        proxy\_http\_version 1.1;  
-        proxy\_set\_header Upgrade $http\_upgrade;  
-        proxy\_set\_header Connection 'upgrade';  
-        proxy\_set\_header Host $host;  
-        proxy\_cache\_bypass $http\_upgrade;  
-        proxy\_set\_header X-Real-IP $remote\_addr;  
-        proxy\_set\_header X-Forwarded-For $proxy\_add\_x\_forwarded\_for;  
-        proxy\_set\_header X-Forwarded-Proto $scheme;  
-    \}  
-\}
+```nginx
+server {
+    listen 80;
+    server_name sms-gateway.example.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
 ```
 
 ### Environment Variables
 
 | Variable | Default | Description |
 | - | - | - |
-| `PORT` | `3000` | Server port (override in `proxy.js`) |
+| `PORT` | `3000` | Server port |
 | `HOST` | `0.0.0.0` | Bind address |
-
 
 
 ## Security
@@ -472,9 +491,9 @@ server \{
 
 - **Path Traversal Protection:** Static file serving resolves paths and verifies they stay within the project directory.
 
-- **No External Dependencies for Core:** Only `better-sqlite3` (database) and `ipaddr.js` (IP validation) as production dependencies.
+- **Credentials Storage:** Optional "Remember me" with encrypted local storage.
 
-- **CORS:** Cross-origin headers are set for API endpoints, but the proxy requires proper authorization headers.
+- **No Data Leaves Your Network:** All SMS traffic stays on your local LAN.
 
 
 ## Troubleshooting
@@ -482,44 +501,42 @@ server \{
 ### "Cannot connect to device"
 
 - Ensure phone and computer are on the same WiFi network
-
 - Verify the Android SMS Gateway app shows "Server running"
-
 - Check the IP address is correct (find it in the app or your router's DHCP list)
-
 - Make sure port 8080 (or custom port) is not blocked by a firewall
 
 ### "Authentication failed"
 
 - Double-check the username and password set in the Android SMS Gateway app
-
 - Credentials are case-sensitive
-
 - Try re-entering credentials in the connection form
 
 ### "Gateway Timeout"
 
 - Keep the Android screen on while sending (disable battery optimization for the app)
-
 - Ensure the app has SMS permissions granted
-
 - Check if the phone has a stable WiFi connection
 
 ### "Server won't start (EADDRINUSE)"
 
-```
-\# Find and kill the process using port 3000  
-lsof -i :3000  
-kill -9 \<PID\>
+```bash
+# Find and kill the process using port 3000
+lsof -i :3000
+kill -9 <PID>
 ```
 
 ### PWA / Install
 
 - **Chrome/Edge:** Click the install icon in the address bar
-
 - **Safari (iOS):** Tap the Share button, then "Add to Home Screen"
-
 - The app runs offline-capable after initial load
+
+### Tauri Desktop App
+
+- **Linux:** Run the AppImage or install the `.deb` package
+- **Windows:** Run the MSI installer
+- **macOS:** Run the DMG installer
+- The app starts automatically and opens a native window
 
 
 ## Browser Support
@@ -537,22 +554,19 @@ Requires: CSS Grid, CSS Custom Properties, Optional Chaining (`?.`), `aspect-rat
 
 ## Tech Stack
 
-- **Runtime:** Node.js (v18+)
-
-- **Database:** SQLite via `better-sqlite3` (WAL mode)
-
+- **Runtime:** Node.js (v18+) or Rust (Tauri desktop app)
+- **Backend:** Rust (axum HTTP server) or Node.js (proxy.js)
+- **Database:** SQLite via `rusqlite` (Rust) or `better-sqlite3` (Node.js)
 - **Frontend:** Vanilla JavaScript (no framework), CSS Custom Properties
-
 - **Design System:** Custom design tokens with 6 themes
-
-- **Proxy:** Native Node.js `http`/`https` modules
-
-- **IP Validation:** `ipaddr.js`
+- **Desktop:** Tauri v2 with embedded HTTP server
+- **Proxy:** Native HTTP client (`reqwest` in Rust / `http`/`https` in Node.js)
+- **IP Validation:** Built-in standard library (`ipnetwork` crate)
 
 
 ## License
 
-MIT License — see [LICENSE](file:///home/max/Desktop/Message/LICENSE)
+MIT License — see [LICENSE](LICENSE)
 
 
 ## Acknowledgments

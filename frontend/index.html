@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d9488">
+<meta name="description" content="Professional SMS Gateway Dashboard - Send and receive SMS via Android device">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Android SMS Gateway</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%230d9488' width='180' height='180' rx='40'/><path fill='white' d='M45 55h90v10H45zm0 25h60v10H45zm0 25h75v10H45z'/></svg>">
+
+<link rel="stylesheet" href="css/design-system.css">
+<style>
+/* Template dropdown - using new CSS variable names */
+.template-dropdown {
+  position: absolute;
+  bottom: 80px;
+  left: 24px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  min-width: 280px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: var(--z-dropdown);
+}
+
+/* CSV Upload area */
+.csv-upload-area {
+  border: 2px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.csv-upload-area:hover {
+  border-color: var(--color-primary-500);
+  background-color: var(--color-bg-primary-subtle);
+}
+
+.csv-upload-area svg {
+  color: var(--color-text-tertiary);
+  margin-bottom: var(--space-3);
+}
+
+/* Input group for modal */
+.input-group {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.input-group .input {
+  flex: 1;
+}
+
+/* Recipients list in modal */
+  .recipients-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+  }
+
+  /* Template Dropdown specific styles */
+  #templateDropdown {
+    position: fixed;
+    bottom: 100px;
+    left: 320px;
+    z-index: 1000;
+  }
+
+  #templateDropdown.dropdown--open {
+    display: block !important;
+  }
+
+  #templateDropdown .dropdown__menu {
+    position: static;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    display: block;
+    width: 280px;
+    max-height: 300px;
+    overflow-y: auto;
+    background-color: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+  }
+
+  #templateDropdown:not(.dropdown--open) {
+    display: none !important;
+  }
+
+  /* Schedule picker styles */
+  .composer__actions-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    flex-shrink: 0;
+  }
+
+  .schedule-picker {
+    display: none;
+    font-family: inherit;
+    font-size: var(--text-sm);
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-bg-surface);
+    color: var(--color-text-primary);
+    max-width: 200px;
+    outline: none;
+  }
+
+  .schedule-picker:focus {
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 2px var(--primary-100);
+  }
+
+  .schedule-picker.visible {
+    display: inline-block;
+  }
+
+  .composer__schedule-info {
+    font-size: var(--text-xs);
+    color: var(--primary-600);
+    padding: var(--space-1) var(--space-4) 0;
+    min-height: 0;
+    transition: min-height var(--transition-fast);
+  }
+
+  .composer__schedule-info.active {
+    min-height: 20px;
+  }
+
+  .composer__schedule-info .cancel-schedule {
+    background: none;
+    border: none;
+    color: var(--error-500);
+    cursor: pointer;
+    font-size: inherit;
+    text-decoration: underline;
+    margin-left: var(--space-2);
+  }
+
+  .composer__schedule-info .cancel-schedule:hover {
+    color: var(--error-600);
+  }
+
+  /* Scheduled message badge */
+  .scheduled-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-xs);
+    color: var(--primary-600);
+  }
+
+  /* Scheduled messages list */
+  .scheduled-list {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .scheduled-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--color-bg-surface-lowered);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-3);
+  }
+
+  .scheduled-item--sent {
+    opacity: 0.6;
+  }
+
+  .scheduled-item--failed {
+    border-left: 3px solid var(--error-500);
+  }
+
+  .scheduled-item__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .scheduled-item__phone {
+    font-weight: var(--font-medium);
+    color: var(--color-text-primary);
+    font-size: var(--text-sm);
+  }
+
+  .scheduled-item__preview {
+    font-size: var(--text-xs);
+    color: var(--color-text-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .scheduled-item__time {
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+  }
+
+  .scheduled-item__status {
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+  }
+
+  .scheduled-item__status--pending {
+    color: var(--warning-600);
+  }
+
+  .scheduled-item__status--sent {
+    color: var(--success-600);
+  }
+
+  .scheduled-item__status--failed {
+    color: var(--error-600);
+  }
+
+  .scheduled-item__cancel {
+    color: var(--error-500);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: var(--space-1);
+    border-radius: var(--radius);
+  }
+
+  .scheduled-item__cancel:hover {
+    background: var(--error-50);
+  }
+
+  /* Contacts dropzone overlay */
+  .contacts-dropzone {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(13, 148, 136, 0.06);
+    border: 3px dashed var(--primary-500);
+    border-radius: var(--radius-lg);
+    z-index: 10;
+    backdrop-filter: blur(2px);
+    pointer-events: none;
+  }
+
+  .contacts-dropzone.drag-active {
+    display: flex;
+  }
+
+  .contacts-dropzone__content {
+    text-align: center;
+    padding: var(--space-8);
+  }
+
+  .contacts-dropzone__content svg {
+    width: 48px;
+    height: 48px;
+    color: var(--primary-500);
+    margin-bottom: var(--space-3);
+  }
+
+  .contacts-dropzone__content p {
+    font-weight: var(--font-semibold);
+    color: var(--primary-600);
+    font-size: var(--text-sm);
+  }
+
+  .contacts-dropzone__content span {
+    font-size: var(--text-xs);
+    color: var(--primary-400);
+  }
+
+  /* Highlight the modal body while dragging */
+  .contacts-modal-body.drag-over .contacts-list,
+  .contacts-modal-body.drag-over .contacts-header {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  /* Contact book styles */
+  .contacts-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+
+  .contacts-search {
+    flex: 1;
+  }
+
+  .contacts-list {
+    max-height: 320px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+
+  .contact-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+    border: 1px solid var(--color-border);
+  }
+
+  .contact-item:hover {
+    background-color: var(--color-bg-surface-lowered);
+    border-color: var(--primary-200);
+  }
+
+  .contact-item__avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: var(--font-semibold);
+    font-size: var(--text-sm);
+    flex-shrink: 0;
+  }
+
+  .contact-item__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .contact-item__name {
+    font-weight: var(--font-medium);
+    color: var(--color-text-primary);
+    font-size: var(--text-sm);
+  }
+
+  .contact-item__phone {
+    font-size: var(--text-xs);
+    color: var(--color-text-tertiary);
+  }
+
+  .contact-item__groups {
+    display: flex;
+    gap: var(--space-1);
+    flex-wrap: wrap;
+    margin-top: var(--space-1);
+  }
+
+  .contact-item__group-tag {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: var(--radius-full);
+    background: var(--primary-100);
+    color: var(--primary-700);
+  }
+
+  .contact-item__actions {
+    display: flex;
+    gap: var(--space-1);
+    flex-shrink: 0;
+  }
+
+  .contact-item__action-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius);
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    border: none;
+    background: none;
+    transition: all var(--transition-fast);
+  }
+
+  .contact-item__action-btn:hover {
+    background: var(--neutral-100);
+    color: var(--color-text-primary);
+  }
+
+  .contact-item__action-btn--chat:hover {
+    background: var(--primary-100);
+    color: var(--primary-600);
+  }
+
+  .contact-item__action-btn--delete:hover {
+    background: var(--error-50);
+    color: var(--error-600);
+  }
+
+  .contact-form {
+    background: var(--color-bg-surface-lowered);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    margin-top: var(--space-2);
+  }
+
+  .contact-form__title {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-3);
+  }
+
+  .contact-form__row {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+
+  .contact-form__row .input {
+    flex: 1;
+  }
+
+  .contact-form__groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin-bottom: var(--space-3);
+  }
+
+  .contact-form__group-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-xs);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--primary-100);
+    color: var(--primary-700);
+  }
+
+  .contact-form__group-tag button {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    margin-left: 2px;
+  }
+
+  .contact-form__add-group {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .contact-form__add-group input {
+    flex: 1;
+  }
+
+  /* Theme grid styles */
+  .theme-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-3);
+  }
+
+  .theme-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .theme-option:hover {
+    border-color: var(--primary-400);
+    background-color: var(--color-bg-surface-lowered);
+  }
+
+  .theme-option.active {
+    border-color: var(--primary-500);
+    background-color: var(--color-bg-primary-subtle);
+  }
+
+  .theme-option__preview {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+  }
+
+  .theme-option__label {
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    color: var(--color-text-secondary);
+  }
+</style>
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Live Region for Screen Readers -->
+  <div id="live-region" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Toast Notifications -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Main App Interface (hidden until connected) -->
+<div class="app" id="appInterface">
+<!-- Header -->
+<header class="app-header">
+<div class="app-header__brand">
+<div class="app-header__logo">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+<path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+</svg>
+</div>
+<span class="app-header__title">Android SMS Gateway</span>
+</div>
+<div class="app-header__actions">
+<!-- Connection Status -->
+<div class="status" id="connectionStatus">
+<span class="status__dot"></span>
+<span class="status__text">Connecting...</span>
+</div>
+<!-- Stats Button -->
+<button class="btn btn--ghost btn--icon" id="statsBtn" title="View Statistics" onclick="openStats()">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+</svg>
+</button>
+</div>
+</header>
+
+<!-- App Body -->
+<div class="app-body">
+<!-- Sidebar -->
+      <aside class="sidebar" id="sidebar">
+        <!-- Sidebar Header -->
+        <div class="sidebar__header">
+          <span class="sidebar__title">Conversations</span>
+          <button class="btn btn--primary btn--icon" onclick="openNewChatMenu()" title="New Chat">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Search -->
+        <div class="sidebar__search">
+          <div class="search">
+            <svg class="search__icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+            <input type="text" class="search__input" id="chatSearch" placeholder="Search conversations..." oninput="filterChats(this.value)">
+          </div>
+        </div>
+
+        <!-- Chat List -->
+        <div class="sidebar__content">
+          <div class="chat-list" id="chatList">
+            <!-- Chat items will be populated by JS -->
+          </div>
+        </div>
+
+        <!-- Sidebar Footer -->
+        <div class="sidebar__footer" style="display:flex;flex-direction:column;gap:var(--space-2);">
+          <button class="btn btn--secondary w-full" onclick="openContacts()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+            </svg>
+            <span>Contacts</span>
+          </button>
+          <button class="btn btn--secondary w-full" onclick="openSettings()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.42h-3.84c-.24 0-.43.17-.47.4l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L3.16 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.43.48.43h3.84c.24 0 .44-.17.47-.4l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
+            <span>Settings</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content" id="mainContent">
+        <!-- Connection Page -->
+        <div class="connection-page" id="connectionPage">
+<div class="connection-card">
+<div class="connection-card__header">
+<div class="connection-card__logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+                </svg>
+              </div>
+<h1 class="connection-card__title">Connect to SMS Gateway</h1>
+<p class="connection-card__subtitle">Enter your Android device details</p>
+</div>
+
+<div class="connection-card__body">
+<div class="form-group">
+<label class="form-group__label" for="url">Device URL</label>
+<input type="text" class="input" id="url" placeholder="10.42.0.165:8080 or api.sms-gate.app" autocomplete="off">
+<p class="form-group__hint">Local: 192.168.x.x:8080 | Cloud: api.sms-gate.app</p>
+</div>
+
+<div class="form-group">
+<label class="form-group__label" for="username">Username</label>
+<input type="text" class="input" id="username" placeholder="admin or API Key" autocomplete="username">
+</div>
+
+<div class="form-group">
+<label class="form-group__label" for="password">Password</label>
+<div class="input-with-toggle">
+  <input type="password" class="input" id="password" placeholder="Enter your password" autocomplete="current-password">
+  <button type="button" class="password-toggle" onclick="togglePasswordVisibility()" title="Show/Hide Password">
+    <svg id="passwordIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+    </svg>
+  </button>
+</div>
+</div>
+
+<label class="checkbox">
+<input type="checkbox" class="checkbox__input" id="saveCreds">
+<span>Remember my credentials</span>
+</label>
+</div>
+
+<div class="connection-card__footer">
+<button class="btn btn--primary btn--lg" id="connectBtn" onclick="saveSettings()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <span>Connect</span>
+              </button>
+              <div id="conn-status" style="text-align: center; font-size: var(--text-sm); color: var(--color-text-secondary); min-height: 20px; margin-top: var(--space-3);"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Window (hidden initially) -->
+        <div class="chat-window hidden" id="chatWindow">
+          <!-- Chat Header -->
+          <div class="chat-window__header">
+            <div class="chat-window__info">
+              <div class="chat-window__avatar" id="headerAvatar">??</div>
+              <div class="chat-window__details">
+                <div class="chat-window__name" id="headerName">Select a chat</div>
+                <div class="chat-window__status" id="headerStatus">
+                  <span class="chat-window__status-dot"></span>
+                  <span>Connected</span>
+                </div>
+              </div>
+            </div>
+            <div class="chat-window__actions" id="chatActions">
+              <button class="btn btn--ghost btn--icon" onclick="openTemplates()" title="Templates">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6z"/>
+                </svg>
+              </button>
+              <button class="btn btn--ghost btn--icon" id="editGroupBtn" onclick="openEditGroup()" title="Edit Group" class="hidden">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Messages -->
+          <div class="messages" id="msgWindow"></div>
+
+          <!-- Composer -->
+          <div class="composer" id="composer">
+            <div class="composer__container">
+              <button class="btn btn--ghost btn--icon" onclick="toggleTemplateDropdown(event)" title="Insert Template">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6z"/>
+                </svg>
+              </button>
+              <textarea class="composer__input" id="msgInput" placeholder="Type a message..." rows="1" onkeydown="handleInputKeydown(event)" oninput="autoResize(this); updateCharCount(this)"></textarea>
+              <div class="composer__actions-row">
+                <button class="btn btn--ghost btn--icon" id="scheduleBtn" onclick="toggleSchedulePicker()" title="Schedule Message">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                  </svg>
+                </button>
+                <input type="datetime-local" id="schedulePicker" class="schedule-picker" title="Send at a specific date/time" onchange="onSchedulePickerChange()" oninput="onSchedulePickerChange()">
+                <button class="btn btn--primary btn--icon" id="sendBtn" onclick="sendMessage()" title="Send Message">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="composer__schedule-info" id="scheduleInfo"></div>
+            <div id="charCount" class="composer__char-count"></div>
+          </div>
+        </div>
+
+<!-- Empty State (shown when no chat selected) -->
+<div class="empty-state hidden" id="emptyState">
+          <div class="empty-state__icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+            </svg>
+          </div>
+          <h2 class="empty-state__title">Welcome to SMS Gateway</h2>
+          <p class="empty-state__description">Select a conversation from the sidebar or start a new chat to begin messaging.</p>
+<button class="btn btn--primary" onclick="openNewChatMenu()">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+<path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+</svg>
+<span>Start New Chat</span>
+</button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- New Chat Modal -->
+  <div class="modal-backdrop" id="newChatModal" onclick="closeModalOnBackdrop(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal__header">
+        <h2 class="modal__title">New Conversation</h2>
+        <button class="modal__close" onclick="closeModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal__body">
+<!-- Chat Type Toggle -->
+<div class="form-group" style="display: flex; gap: var(--space-2);">
+<button class="btn" id="singleChatBtn" style="flex: 1;" onclick="setChatType('single')">Single</button>
+<button class="btn btn--ghost" id="groupChatBtn" style="flex: 1;" onclick="setChatType('group')">Group</button>
+<button class="btn btn--ghost" id="csvChatBtn" style="flex: 1;" onclick="setChatType('csv')">Via CSV</button>
+</div>
+
+        <!-- Single Chat Input -->
+        <div id="singleChatSection">
+          <div class="form-group">
+            <label class="form-group__label" for="singlePhoneInput">Phone Number</label>
+            <input type="tel" class="input" id="singlePhoneInput" placeholder="+1 234 567 8900">
+            <p class="form-group__hint">Include country code (e.g., +1 for US)</p>
+          </div>
+        </div>
+
+        <!-- Group Chat Input -->
+        <div id="groupChatSection" class="hidden">
+          <div class="form-group">
+            <label class="form-group__label" for="groupNameInput">Group Name</label>
+            <input type="text" class="input" id="groupNameInput" placeholder="e.g., Marketing Team">
+          </div>
+          <div class="form-group">
+            <label class="form-group__label">Recipients</label>
+            <div id="recipientsList" style="display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3);"></div>
+            <div class="input-group">
+              <input type="tel" class="input" id="newRecipientInput" placeholder="+1 234 567 8900" onkeydown="handleRecipientKeydown(event)">
+              <button class="btn btn--secondary" onclick="addRecipient()">Add</button>
+            </div>
+            <p class="form-group__hint">Press Enter or click Add. <button class="btn btn--ghost" style="padding: 0; font-size: inherit;" onclick="document.getElementById('csvImportInput').click()">Import from CSV</button></p>
+            <input type="file" id="csvImportInput" accept=".csv" class="hidden" onchange="handleCSVImport(this)">
+          </div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn--primary" id="modalConfirmBtn" onclick="confirmNewChat()">Start Chat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CSV Sender Modal -->
+  <div class="modal-backdrop" id="csvSenderModal" onclick="closeModalOnBackdrop(event, 'csvSenderModal')">
+    <div class="modal modal--lg" onclick="event.stopPropagation()">
+      <div class="modal__header">
+        <h2 class="modal__title">Send via CSV</h2>
+        <button class="modal__close" onclick="closeCSVSender()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal__body">
+<div id="csvUploadArea" style="border: 2px dashed var(--color-border); border-radius: var(--radius-lg); padding: var(--space-8); text-align: center; cursor: pointer;" onclick="document.getElementById('csvSendFile').click()">
+<svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" style="color: var(--color-text-tertiary); margin-bottom: var(--space-4);">
+<path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6z"/>
+</svg>
+<p style="font-weight: var(--font-medium); color: var(--color-text-primary); margin-bottom: var(--space-2);">Drop CSV file here</p>
+<p style="font-size: var(--text-sm); color: var(--color-text-secondary);">or click to browse</p>
+<p style="font-size: var(--text-xs); color: var(--color-text-tertiary); margin-top: var(--space-4);">Format: phone (one per line) or phone,message</p>
+          <input type="file" id="csvSendFile" accept=".csv" class="hidden" onchange="handleCSVSendFile(this)">
+        </div>
+
+        <div id="csvPreview" style="display: none; margin-top: var(--space-6);">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--color-border);">
+                <th style="text-align: left; padding: var(--space-3); font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--color-text-secondary);">Phone</th>
+                <th style="text-align: left; padding: var(--space-3); font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--color-text-secondary);">Message</th>
+              </tr>
+            </thead>
+            <tbody id="csvPreviewRows"></tbody>
+          </table>
+          <p id="csvRecipientCount" style="text-align: center; margin-top: var(--space-4); font-size: var(--text-sm); color: var(--color-text-secondary);"></p>
+        </div>
+
+        <div id="csvMessageInput" style="display: none; margin-top: var(--space-6);">
+          <label class="form-group__label" for="csvMessageText">Message for all recipients</label>
+          <textarea class="input" id="csvMessageText" rows="3" placeholder="Enter your message..."></textarea>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" onclick="closeCSVSender()">Cancel</button>
+        <button class="btn btn--primary" id="csvSendBtn" onclick="sendCSVMessages()" disabled>Send Messages</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Modal -->
+  <div class="modal-backdrop" id="statsModal" onclick="closeModalOnBackdrop(event, 'statsModal')">
+    <div class="modal modal--lg" onclick="event.stopPropagation()">
+      <div class="modal__header">
+        <h2 class="modal__title">Statistics</h2>
+        <button class="modal__close" onclick="closeStats()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal__body">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--primary">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+              </svg>
+            </div>
+            <div class="stat-card__content">
+              <span class="stat-card__value" id="statSent">0</span>
+              <span class="stat-card__label">Messages Sent</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--success">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              </svg>
+            </div>
+            <div class="stat-card__content">
+              <span class="stat-card__value" id="statDelivered">0</span>
+              <span class="stat-card__label">Delivered</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--warning">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+              </svg>
+            </div>
+            <div class="stat-card__content">
+              <span class="stat-card__value" id="statReceived">0</span>
+              <span class="stat-card__label">Received</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--error">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>
+              </svg>
+            </div>
+            <div class="stat-card__content">
+              <span class="stat-card__value" id="statFailed">0</span>
+              <span class="stat-card__label">Failed</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--primary">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3z"/>
+              </svg>
+            </div>
+            <div class="stat-card__content">
+              <span class="stat-card__value" id="statGroups">0</span>
+              <span class="stat-card__label">Group Chats</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--primary">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              </svg>
+            </div>
+            <div class="stat-card__content">
+              <span class="stat-card__value" id="statContacts">0</span>
+              <span class="stat-card__label">Contacts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Scheduled Messages Section -->
+      <div style="margin-top: var(--space-6); border-top: 1px solid var(--color-border); padding-top: var(--space-4);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4);">
+          <h3 style="font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--color-text-secondary); display: flex; align-items: center; gap: var(--space-2);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+            </svg>
+            Scheduled Messages
+          </h3>
+          <button class="btn btn--ghost btn--icon" onclick="loadScheduledSection()" title="Refresh">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="scheduled-list" id="scheduledList">
+          <p style="text-align:center;color:var(--color-text-tertiary);padding:var(--space-4);">Loading...</p>
+        </div>
+      </div>
+
+      <div class="modal__footer" style="justify-content: space-between;">
+        <div style="display: flex; gap: var(--space-2);">
+          <button class="btn btn--danger" onclick="clearStats()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+            </svg>
+            <span>Reset Statistics</span>
+          </button>
+        </div>
+        <button class="btn btn--ghost" onclick="closeStats()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Templates Modal -->
+  <div class="modal-backdrop" id="templatesModal" onclick="closeModalOnBackdrop(event, 'templatesModal')">
+    <div class="modal modal--lg" onclick="event.stopPropagation()">
+      <div class="modal__header">
+        <h2 class="modal__title">Message Templates</h2>
+        <button class="modal__close" onclick="closeTemplates()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal__body">
+        <!-- Templates List -->
+        <div id="templatesList" style="display: grid; gap: var(--space-3); margin-bottom: var(--space-6);">
+          <div style="text-align: center; padding: var(--space-8); color: var(--color-text-tertiary);">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" style="margin-bottom: var(--space-4);">
+              <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6z"/>
+            </svg>
+            <p>No templates saved yet</p>
+            <p style="font-size: var(--text-sm); margin-top: var(--space-2);">Create your first template below</p>
+          </div>
+        </div>
+
+        <!-- Create Template Form -->
+        <div style="background-color: var(--color-bg-surface-lowered); border-radius: var(--radius-lg); padding: var(--space-5);">
+          <h3 style="font-size: var(--text-sm); font-weight: var(--font-semibold); text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-4);">Create New Template</h3>
+          <div class="form-group">
+            <label class="form-group__label" for="templateTitle">Template Name</label>
+            <input type="text" class="input" id="templateTitle" placeholder="e.g., Welcome Message">
+          </div>
+          <div class="form-group">
+            <label class="form-group__label" for="templateText">Message Content</label>
+            <textarea class="input" id="templateText" rows="3" placeholder="Enter your message template..."></textarea>
+          </div>
+          <div style="display: flex; gap: var(--space-3); justify-content: flex-end;">
+            <button class="btn btn--ghost" onclick="clearTemplateForm()">Clear</button>
+            <button class="btn btn--primary" onclick="saveTemplate()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4z"/>
+              </svg>
+              <span>Save Template</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Template Dropdown (for composer) -->
+<div class="dropdown" id="templateDropdown" class="hidden">
+<div class="dropdown__menu" id="templateDropdownList">
+      <!-- Templates populated by JS -->
+    </div>
+  </div>
+
+  <!-- Contacts Modal -->
+  <div class="modal-backdrop" id="contactsModal" onclick="closeModalOnBackdrop(event, 'contactsModal')">
+    <div class="modal modal--lg" onclick="event.stopPropagation()">
+      <div class="modal__header">
+        <h2 class="modal__title">Contacts</h2>
+        <button class="modal__close" onclick="closeContacts()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal__body contacts-modal-body" id="contactsModalBody">
+        <!-- Dropzone overlay -->
+        <div class="contacts-dropzone" id="contactsDropzone">
+          <div class="contacts-dropzone__content">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
+            </svg>
+            <p>Drop CSV file to import contacts</p>
+            <span>Name, Phone, Groups</span>
+          </div>
+        </div>
+
+        <!-- Search + action buttons -->
+        <div class="contacts-header">
+          <div class="search contacts-search">
+            <svg class="search__icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+            </svg>
+            <input type="text" class="search__input" id="contactsSearch" placeholder="Search contacts..." oninput="filterContacts(this.value)">
+          </div>
+          <div class="composer__actions-row" style="gap:var(--space-1);">
+            <button class="btn btn--ghost btn--icon" onclick="exportContacts()" title="Export CSV">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+              </svg>
+            </button>
+            <button class="btn btn--ghost btn--icon" onclick="exportContactsVCF()" title="Export vCard">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8.5 5.5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5S9.17 8 10 8s1.5.67 1.5 1.5zM12 17h-4v-.75c0-1.33 2.67-2 4-2s4 .67 4 2V17z"/>
+              </svg>
+            </button>
+          </div>
+          <button class="btn btn--ghost" onclick="document.getElementById('contactsCsvInput').click()" title="Import CSV">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
+            </svg>
+            <span>Import</span>
+          </button>
+          <input type="file" id="contactsCsvInput" accept=".csv" class="hidden" onchange="importContacts(this)">
+          <button class="btn btn--primary" onclick="openAddContact()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+            <span>Add</span>
+          </button>
+        </div>
+
+        <!-- Contact List -->
+        <div class="contacts-list" id="contactsList">
+          <p style="text-align:center;color:var(--color-text-tertiary);padding:var(--space-8);">Loading...</p>
+        </div>
+
+        <!-- Add/Edit Contact Form (hidden by default) -->
+        <div class="contact-form hidden" id="contactForm">
+          <div class="contact-form__title" id="contactFormTitle">Add Contact</div>
+          <div class="contact-form__row">
+            <input type="text" class="input" id="contactNameInput" placeholder="Name">
+            <input type="tel" class="input" id="contactPhoneInput" placeholder="Phone number">
+          </div>
+          <div class="contact-form__groups" id="contactGroupsList"></div>
+          <div class="contact-form__add-group">
+            <input type="text" class="input" id="contactGroupInput" placeholder="Add group tag (e.g. Family)" onkeydown="handleContactGroupKeydown(event)">
+            <button class="btn btn--secondary" onclick="addContactGroupTag()">Add</button>
+          </div>
+          <div style="display:flex;gap:var(--space-2);justify-content:flex-end;margin-top:var(--space-3);">
+            <button class="btn btn--ghost" onclick="cancelContactForm()">Cancel</button>
+            <button class="btn btn--primary" onclick="saveContactForm()">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-backdrop" id="settingsModal" onclick="closeModalOnBackdrop(event, 'settingsModal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal__header">
+        <h2 class="modal__title">Settings</h2>
+        <button class="modal__close" onclick="closeSettings()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal__body">
+        <div class="form-group">
+          <label class="form-group__label">Connection</label>
+          <button class="btn btn--secondary" class="w-full" onclick="disconnect()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+            </svg>
+            <span>Disconnect & Reconfigure</span>
+          </button>
+        </div>
+        <div class="form-group">
+          <label class="form-group__label">Theme</label>
+<div class="theme-grid">
+<div class="theme-option" data-theme="light" onclick="setTheme('light')">
+<div class="theme-option__preview" style="background: linear-gradient(135deg, #14b8a6, #0d9488);"></div>
+<span class="theme-option__label">Light</span>
+</div>
+<div class="theme-option" data-theme="dark" onclick="setTheme('dark')">
+<div class="theme-option__preview" style="background: linear-gradient(135deg, #14b8a6, #0d9488);"></div>
+<span class="theme-option__label">Dark</span>
+</div>
+<div class="theme-option" data-theme="chocolate" onclick="setTheme('chocolate')">
+<div class="theme-option__preview" style="background: linear-gradient(135deg, #a65d3a, #8b4d32);"></div>
+<span class="theme-option__label">Chocolate</span>
+</div>
+<div class="theme-option" data-theme="skyblue" onclick="setTheme('skyblue')">
+<div class="theme-option__preview" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);"></div>
+<span class="theme-option__label">Sky Blue</span>
+</div>
+<div class="theme-option" data-theme="neon" onclick="setTheme('neon')">
+<div class="theme-option__preview" style="background: linear-gradient(135deg, #d946ef, #c026d3);"></div>
+<span class="theme-option__label">Neon</span>
+</div>
+<div class="theme-option" data-theme="vanilla" onclick="setTheme('vanilla')">
+<div class="theme-option__preview" style="background: linear-gradient(135deg, #fbbf24, #f59e0b);"></div>
+<span class="theme-option__label">Vanilla</span>
+</div>
+</div>
+        </div>
+        <div class="form-group">
+          <label class="form-group__label">Data</label>
+          <button class="btn btn--danger" class="w-full" onclick="clearAllData()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+            </svg>
+            <span>Clear All Data</span>
+          </button>
+          <p class="form-group__hint">This will delete all messages, chats, templates, and statistics</p>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" onclick="closeSettings()">Close</button>
+      </div>
+    </div>
+  </div>
+
+<!-- JavaScript -->
+<script src="js/toast.js?v=7"></script>
+<script src="js/storage.js?v=7"></script>
+<script src="js/api.js?v=7"></script>
+<script src="js/app.js?v=7"></script>
+<script>
+// Force cache clear on load
+console.log('App version:', new Date().toISOString());
+</script>
+</body>
+</html>
