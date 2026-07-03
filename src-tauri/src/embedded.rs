@@ -10,7 +10,7 @@ const API_JS: &str = include_str!("../../frontend/js/api.js");
 const STORAGE_JS: &str = include_str!("../../frontend/js/storage.js");
 const TOAST_JS: &str = include_str!("../../frontend/js/toast.js");
 
-const FAVICON_ICO: &[u8] = include_bytes!("../../frontend/favicon.ico");
+const FAVICON_SVG: &str = include_str!("../../frontend/favicon.svg");
 
 const MANIFEST_JSON: &str = "{\
 \"name\":\"SMS Gateway Dashboard\",\
@@ -32,12 +32,12 @@ pub fn serve_frontend(path: &str) -> Response {
         "js/api.js" => (API_JS, "application/javascript; charset=utf-8"),
         "js/storage.js" => (STORAGE_JS, "application/javascript; charset=utf-8"),
         "js/toast.js" => (TOAST_JS, "application/javascript; charset=utf-8"),
-        "favicon.ico" => {
+        "favicon.svg" => {
             return Response::builder()
                 .status(StatusCode::OK)
-                .header(header::CONTENT_TYPE, "image/x-icon")
+                .header(header::CONTENT_TYPE, "image/svg+xml")
                 .header(header::CACHE_CONTROL, "public, max-age=86400")
-                .body(axum::body::Body::from(FAVICON_ICO.to_vec()))
+                .body(axum::body::Body::from(FAVICON_SVG.to_string()))
                 .unwrap();
         }
         "manifest.json" => {
