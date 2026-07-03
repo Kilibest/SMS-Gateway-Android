@@ -1,7 +1,7 @@
 const API = {
   // Use remote API domain - will work from any network
-  PROXY_URL: 'http://localhost:3000/proxy',
-  MESSAGES_URL: 'http://localhost:3000/messages',
+  PROXY_URL: '/proxy',
+  MESSAGES_URL: '/messages',
   // Remote API URL (user must provide credentials)
   REMOTE_API_URL: 'https://api.sms-gate.app/3rdparty/v1/message',
   REMOTE_CREDENTIALS: { username: '', password: '' }, // Set by user
@@ -123,7 +123,7 @@ async testRemoteConnection() {
 } catch (error) {
     console.error('Connection error:', error.name, error.message);
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      return { success: false, error: 'Cannot connect to proxy at localhost:3000. Is it running?' };
+      return { success: false, error: 'Cannot connect to proxy. Is the server running?' };
     }
     return { success: false, error: 'Unable to reach the local proxy or gateway: ' + error.message };
   }
