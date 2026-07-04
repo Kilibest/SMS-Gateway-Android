@@ -187,7 +187,7 @@ No building required — grab the latest release:
 | **Linux** | `SMS Gateway Dashboard_x.x.x_amd64.AppImage` or `.deb` or `.rpm` |
 | **macOS** | `SMS Gateway Dashboard_x.x.x_x64.dmg` |
 
-Available on the [Releases page](https://github.com/your-username/your-repo/releases).
+Available on the [Releases page](https://github.com/Kilibest/SMS-Gateway-Android/releases).
 
 
 ## Usage Guide
@@ -411,7 +411,7 @@ No technical skills required. Download the installer for your operating system a
 
 #### For Windows Users
 
-> **Need help?** If you're not familiar with the command line, use the pre-built installer from the [Releases page](https://github.com/your-username/your-repo/releases) instead.
+> **Need help?** If you're not familiar with the command line, use the pre-built installer from the [Releases page](https://github.com/Kilibest/SMS-Gateway-Android/releases) instead.
 
 If you want to build the app yourself from the source code (for example, to get the latest changes), follow these steps:
 
