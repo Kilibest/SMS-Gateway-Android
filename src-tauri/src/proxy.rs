@@ -32,16 +32,12 @@ pub fn is_internal_target(hostname: &str) -> bool {
     if let Ok(addr) = cleaned.parse::<IpAddr>() {
         return match addr {
             IpAddr::V4(v4) => {
+                // We block loopback and link-local for security, but intentionally
+                // allow private ranges (10.x.x.x, 192.168.x.x, 172.16-31.x.x) so
+                // users can proxy to their Android device on the local WiFi network.
                 v4.is_loopback()
-                    || v4.is_private()
                     || v4.is_link_local()
                     || v4.is_unspecified()
-                    || {
-                        // Also check 10.0.0.0/8 (is_private() covers 10/8 on most platforms,
-                        // but be explicit)
-                        let octets = v4.octets();
-                        octets[0] == 10
-                    }
             }
             IpAddr::V6(v6) => {
                 v6.is_loopback()

@@ -1,8 +1,8 @@
 # Android SMS Gateway Dashboard
 
-**A modern, professional web dashboard for managing SMS messaging through your Android device** 
+**A modern, professional web dashboard for managing SMS messaging through your Android device**
 
-[Features](#features) • [Quick Start](#quick-start) • [Usage](#usage-guide) • [API](#api-reference) • [Deployment](#deployment) 
+[Features](#features) • [Quick Start](#quick-start) • [Usage](#usage-guide) • [API](#api-reference) • [Deployment](#deployment)
 
 
 ## Overview
@@ -11,7 +11,10 @@ Android SMS Gateway Dashboard is a full-featured web application that turns your
 
 ![preview](https://res.cloudinary.com/dmztdgxfp/image/upload/v1782916280/epj9kqpfbtkqlss1uq9q.png)
 
-The app runs as a single Node.js server that serves the dashboard UI and acts as a secure proxy to your Android device, overcoming CORS restrictions that would prevent a browser from directly accessing the device.
+The app comes in two forms:
+
+- **Desktop App (Tauri)** — A standalone windowed application. No browser, no terminal. Just install and run. Available for Windows (MSI), Linux (AppImage/DEB/RPM), and macOS (DMG).
+- **Node.js Server** — Runs on any machine on your local network. Access the dashboard from any browser on the same network. Good for team use or when you can't install software.
 
 
 ## Features
@@ -80,51 +83,51 @@ The app runs as a single Node.js server that serves the dashboard UI and acts as
 
 ### 🔒 Security
 
-- **SSRF Protection** — Blocks proxy requests to internal/private networks using `ipaddr.js`
+- **SSRF Protection** — Blocks proxy requests to loopback/localhost addresses while allowing private network access to your Android device
 
 - **Path Traversal Prevention** — Static file serving is locked to the project directory
 
 - **Credentials Storage** — Optional "Remember me" with encrypted local storage
 
-- **No Data Leaves Your Network** — All SMS traffic stays on your local LAN
+- **No Data Leaves Your Local Network** — All SMS traffic stays on your LAN when using local mode
 
 
 ## Architecture
 
+The app has two independent backends that share the same frontend and API design:
+
 ```
-┌─────────────┐     HTTP/WS      ┌──────────────────┐      HTTP       ┌──────────────────┐  
-│   Browser   │ ──────────────→  │  Node.js Server  │ ──────────────→  │  Android Device  │  
-│ (Dashboard) │                  │  (localhost:3000) │                  │  (SMS Gateway)   │  
-└─────────────┘                  └──────────────────┘                  └──────────────────┘  
-                                         │  
-                                         │ SQLite (data.db)  
-                                         ▼  
-                                  ┌──────────────────┐  
-                                  │  Persistent Data  │  
-                                  │  - Messages       │  
-                                  │  - Contacts       │  
-                                  │  - Templates      │  
-                                  │  - Groups         │  
-                                  │  - Config         │  
-                                  │  - Stats          │  
-                                  │  - Scheduled Msgs │  
-                                  └──────────────────┘
+                 ┌──────────────────────────────────────────────────┐
+                 │            Browser or Tauri Webview              │
+                 │  (index.html, CSS, JS — same UI either way)      │
+                 └──────┬───────────────────────────┬───────────────┘
+                        │                           │
+                 ┌──────▼──────────────┐   ┌────────▼──────────────┐
+                 │  Node.js Server     │   │  Tauri Desktop App    │
+                 │  (proxy.js + lib/)  │   │  (Rust + axum server) │
+                 │  Port: 3000         │   │  Port: random (127.0) │
+                 └──────┬──────────────┘   └────────┬──────────────┘
+                        │                           │
+                        └──────────┬────────────────┘
+                                   │ HTTP proxy
+                          ┌────────▼──────────┐
+                          │  Android Device   │
+                          │  (SMS Gateway)    │
+                          │  192.168.x.x:8080 │
+                          └───────────────────┘
 ```
 
-The server handles three roles on a single port:
-
-1. **Static file server** — Serves the dashboard UI (`index.html`, CSS, JS)
-
-2. **API server** — REST endpoints for data persistence, contacts, and scheduling
-
-3. **Proxy server** — Forwards SMS requests to the Android device with SSRF protection
+Both backends:
+1. **Serve the dashboard UI** — `index.html`, CSS, JS files
+2. **REST API** — Endpoints for messages, contacts, templates, scheduling
+3. **Proxy server** — Forwards SMS requests to the Android device on your local network
+4. **SQLite database** — Persistent storage (messages, contacts, templates, groups, stats, config)
 
 ### Data Persistence
 
 The app uses a dual-write strategy:
 
-- **Primary:** SQLite database (`data.db`) via `better-sqlite3` — server-side persistence
-
+- **Primary:** SQLite database — server-side persistence (rusqlite in Rust / better-sqlite3 in Node.js)
 - **Cache:** `localStorage` — local cache and fallback when the server is unreachable
 
 On startup, `Storage.init()` hydrates the in-memory cache from the server API. All subsequent reads are synchronous from the cache; writes go to localStorage immediately and fire a background API request to sync with the server.
@@ -142,18 +145,21 @@ On startup, `Storage.init()` hydrates the in-memory cache from the server API. A
 
    - Note your device's IP address on the local network
 
-2. **Node.js** v18+ — [Download](https://nodejs.org/)
+2. Choose your setup:
 
-### Setup
+   - **Desktop App** — No prerequisites. Download from the [Releases](#desktop-app-recommended) section.
+   - **Node.js Server** — Requires [Node.js](https://nodejs.org/) v18+.
+
+### Setup (Node.js)
 
 ```
-\# Clone or download the project  
+# Clone or download the project  
 cd android-sms-gateway-dashboard  
   
-\# Install dependencies  
+# Install dependencies  
 npm install  
   
-\# Start the server  
+# Start the server  
 npm start
 ```
 
@@ -161,29 +167,32 @@ The server starts on `http://localhost:3000`. Open it in your browser.
 
 ### Connect to Your Device
 
-1. Open `http://localhost:3000` in your browser
+1. Open the dashboard in your browser (Node.js) or launch the desktop app
 
 2. Enter your Android device's IP address and port (e.g., `192.168.1.100:8080`)
 
 3. Enter the username and password from the Android SMS Gateway app
 
-4. Check **Remember my credentials** (optional)
-
-5. Click **Connect**
+4. Click **Connect**
 
 > **Tip:** The app also supports cloud-based SMS gateways via the [SMS Gateway API](https://api.sms-gate.app/). Enter a cloud API URL to connect remotely.
+
+### Download the Desktop App (Recommended)
+
+No building required — grab the latest release:
+
+| Platform | Download |
+|----------|----------|
+| **Windows** | `SMS Gateway Dashboard_x.x.x_x64.msi` / `.exe` |
+| **Linux** | `SMS Gateway Dashboard_x.x.x_amd64.AppImage` or `.deb` or `.rpm` |
+| **macOS** | `SMS Gateway Dashboard_x.x.x_x64.dmg` |
+
+Available on the [Releases page](https://github.com/your-username/your-repo/releases).
 
 
 ## Usage Guide
 
 ### Sending Messages
-
-
-
-
-
-
-
 
 #### Single Message
 
@@ -278,22 +287,16 @@ Save frequently used messages for quick access:
 Click the **chart icon** (📊) in the header to view:
 
 - Messages sent, delivered, received, and failed
-
 - Number of active group chats and unique contacts
-
 - Scheduled messages with status and cancel buttons
-
 - Reset all statistics (with confirmation)
 
 ### Settings
 
-
 Click **Settings** in the sidebar footer:
 
 - **Disconnect** — Clear the connection and return to the setup screen
-
 - **Themes** — Choose from 6 themes (Light, Dark, Chocolate, Sky Blue, Neon, Vanilla)
-
 - **Clear All Data** — Delete all messages, contacts, templates, and statistics
 
 
@@ -306,101 +309,178 @@ The server exposes the following REST API endpoints:
 | Method | Endpoint | Description |
 | - | - | - |
 | `GET` | `/api/data` | Fetch all app data (messages, templates, groups, stats, config) |
-| `POST` | `/api/data/messages` | Save messages `\{ messages: \[...\] \}` |
-| `POST` | `/api/data/templates` | Save templates `\{ templates: \[...\] \}` |
-| `POST` | `/api/data/groups` | Save groups `\{ groups: \{...\} \}` |
-| `POST` | `/api/data/stats` | Save stats `\{ stats: \{...\} \}` |
-| `POST` | `/api/data/config` | Save config `\{ config: \{...\} \}` |
+| `POST` | `/api/data/messages` | Save messages `{ messages: [...] }` |
+| `POST` | `/api/data/templates` | Save templates `{ templates: [...] }` |
+| `POST` | `/api/data/groups` | Save groups `{ groups: {...} }` |
+| `POST` | `/api/data/stats` | Save stats `{ stats: {...} }` |
+| `POST` | `/api/data/config` | Save config `{ config: {...} }` |
 | `DELETE` | `/api/data/config` | Delete all config |
 | `DELETE` | `/api/data` | Clear all data |
-
 
 ### Contacts API
 
 | Method | Endpoint | Description |
 | - | - | - |
 | `GET` | `/api/contacts` | List all contacts (sorted by name) |
-| `POST` | `/api/contacts` | Create a contact `\{ id, name, phone, groups \}` |
-| `PUT` | `/api/contacts` | Update a contact `\{ id, name, phone, groups \}` |
+| `POST` | `/api/contacts` | Create a contact `{ id, name, phone, groups }` |
+| `PUT` | `/api/contacts` | Update a contact `{ id, name, phone, groups }` |
 | `DELETE` | `/api/contacts?id=xxx` | Delete a contact |
 | `GET` | `/api/contacts/export` | Export all contacts as CSV |
 | `GET` | `/api/contacts/export/vcf` | Export all contacts as vCard 3.0 |
-| `POST` | `/api/contacts/import` | Import contacts from CSV `\{ csv: "..." \}` |
-
+| `POST` | `/api/contacts/import` | Import contacts from CSV `{ csv: "..." }` |
 
 ### Schedule API
 
 | Method | Endpoint | Description |
 | - | - | - |
-| `POST` | `/api/schedule` | Schedule a message `\{ id, phone, text, sendAt, ... \}` |
+| `POST` | `/api/schedule` | Schedule a message `{ id, phone, text, sendAt, ... }` |
 | `GET` | `/api/schedule` | List all scheduled messages |
 | `DELETE` | `/api/schedule?id=xxx` | Cancel a scheduled message |
-
 
 ### System
 
 | Method | Endpoint | Description |
 | - | - | - |
-| `GET` | `/health` | Health check `\{ status: "ok", timestamp \}` |
+| `GET` | `/health` | Health check `{ status: "ok", timestamp }` |
 | `POST` | `/webhook` | Receive incoming SMS from the Android app |
 | `GET` | `/messages` | Poll for received messages |
-| `POST` | `/proxy?url=\<target\>` | Proxy an SMS request to the Android device |
-
+| `POST` | `/proxy?url=<target>` | Proxy an SMS request to the Android device |
 
 
 ## File Structure
 
 ```
 android-sms-gateway-dashboard/  
-├── index.html                  \# Main dashboard HTML (all UI components)  
-├── package.json                \# Project metadata and dependencies  
-├── manifest.json               \# PWA manifest (installable web app)  
-├── proxy.js                    \# Server entry point (HTTP + static files + API)  
-├── start.sh                    \# Convenience startup script  
-├── data.db                     \# SQLite database (auto-created at runtime)  
-├── CHANGELOG.md                \# Version history  
-├── LICENSE                     \# MIT license  
+├── index.html                  # Main dashboard HTML (all UI components)  
+├── package.json                # Project metadata and dependencies  
+├── manifest.json               # PWA manifest (installable web app)  
+├── proxy.js                    # Node.js server entry point  
+├── start.sh                    # Convenience startup script (Linux/macOS)  
+├── CHANGELOG.md                # Version history  
+├── CLAUDE.md                   # AI coding assistant instructions  
+├── LICENSE                     # MIT license  
 │  
 ├── css/  
-│   └── design-system.css       \# Complete design system (tokens, themes, components)  
+│   └── design-system.css       # Complete design system (tokens, themes, components)  
 │  
 ├── js/  
-│   ├── app.js                  \# Main application logic (state, UI, interactions)  
-│   ├── api.js                  \# API communication (connection, send, poll)  
-│   ├── storage.js              \# Data persistence (SQLite via API + localStorage)  
-│   └── toast.js                \# Toast notification system  
+│   ├── app.js                  # Main application logic (state, UI, interactions)  
+│   ├── api.js                  # API communication (connection, send, poll)  
+│   ├── storage.js              # Data persistence (SQLite via API + localStorage)  
+│   └── toast.js                # Toast notification system  
 │  
 ├── lib/  
-│   ├── db.js                   \# SQLite database layer (tables, CRUD, queries)  
-│   └── proxy-handler.js        \# Server request handler (API routes, proxy, scheduler)  
+│   ├── db.js                   # Node.js SQLite layer (tables, CRUD, queries)  
+│   └── proxy-handler.js        # Node.js request handler (API routes, proxy, scheduler)  
 │  
-└── dist/                       \# Platform-specific builds (optional)
+├── frontend/                   # Frontend files for Tauri desktop build  
+│   ├── index.html              #   (mirrors root files — embedded into the binary)  
+│   ├── css/  
+│   └── js/  
+│  
+├── src-tauri/                  # Tauri desktop app (Rust backend)  
+│   ├── Cargo.toml              # Rust dependencies and build config  
+│   ├── tauri.conf.json         # Tauri window and bundle settings  
+│   ├── build.rs                # Compile-time frontend embedding  
+│   └── src/  
+│       ├── main.rs             # App entry — starts server, opens webview  
+│       ├── lib.rs              # Library init — database, server, scheduler  
+│       ├── server.rs           # Axum HTTP router and all API handlers  
+│       ├── db.rs               # Rust SQLite layer (rusqlite)  
+│       ├── models.rs           # Data types (Message, Contact, etc.)  
+│       ├── proxy.rs            # SSRF protection + SMS forwarding  
+│       ├── scheduler.rs        # Background scheduler for due messages  
+│       └── embedded.rs         # Frontend files embedded at compile time  
+│  
+├── release/                    # Pre-built installers (gitignored)  
+│   └── v2.0.0/  
+│       ├── SMS Gateway Dashboard_2.0.0_amd64.AppImage  
+│       ├── SMS Gateway Dashboard_2.0.0_amd64.deb  
+│       └── SMS Gateway Dashboard-2.0.0-1.x86_64.rpm  
+│  
+└── .github/workflows/          # CI/CD — builds for all platforms on push/PR  
+    └── build.yml
 ```
 
 
 ## Deployment
 
-### Option 1: Desktop App (Tauri — Recommended)
+### Option 1: Desktop App (Recommended)
 
-The easiest way for non-technical users. Build a standalone desktop application:
+No technical skills required. Download the installer for your operating system and install it like any other program.
+
+#### For Windows Users
+
+> **Need help?** If you're not familiar with the command line, use the pre-built installer from the [Releases page](https://github.com/your-username/your-repo/releases) instead.
+
+If you want to build the app yourself from the source code (for example, to get the latest changes), follow these steps:
+
+**Step 1 — Install Rust**
+
+1. Go to [rustup.rs](https://rustup.rs/) and download `rustup-init.exe`
+2. Run the installer — accept the default settings
+3. After installation, restart your computer
+
+**Step 2 — Install WebView2**
+
+Windows 10 (version 1803+) and Windows 11 already have WebView2. If you're on an older version, download it from [Microsoft](https://developer.microsoft.com/en-us/microsoft-edge/webview2/).
+
+**Step 3 — Build the app**
+
+Open **Command Prompt** or **PowerShell** in the project folder and run:
+
+```
+cd src-tauri
+cargo tauri build
+```
+
+The first build downloads and compiles many dependencies and can take 5–10 minutes.
+
+**Step 4 — Find the installer**
+
+After the build finishes, you'll find two installers in the following folder:
+
+```
+src-tauri\target\release\bundle\msi\
+  SMS Gateway Dashboard_x.x.x_x64.msi    ← Run this to install
+
+src-tauri\target\release\bundle\nsis\
+  SMS Gateway Dashboard_x.x.x_x64-setup.exe    ← Alternative installer
+```
+
+Double-click the `.msi` or `.exe` file to install the app like any Windows program. A shortcut will appear in your Start Menu.
+
+#### For Linux Users
 
 ```bash
-# Prerequisites: Rust toolchain and Tauri system deps
+# Prerequisites: Rust toolchain and system libraries
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 sudo apt install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
   librsvg2-dev libsoup-3.0-dev libssl-dev build-essential
 
-# Build the desktop app
+# Build
 cd src-tauri
 cargo tauri build
 
 # Installer located at:
-# Linux:   src-tauri/target/release/bundle/deb/  or  AppImage
-# Windows: src-tauri/target/release/bundle/msi/
-# macOS:   src-tauri/target/release/bundle/dmg/
+# src-tauri/target/release/bundle/deb/   (.deb for Debian/Ubuntu)
+# src-tauri/target/release/bundle/rpm/   (.rpm for Fedora)
+# src-tauri/target/release/bundle/appimage/  (AppImage — runs anywhere)
 ```
 
-The app starts a local server on port 3000 and opens a native window. No browser or terminal needed.
+#### For macOS Users
+
+```bash
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Build
+cd src-tauri
+cargo tauri build
+
+# Installer located at:
+# src-tauri/target/release/bundle/dmg/   (drag to Applications)
+```
 
 ### Option 2: Local Network (Node.js)
 
@@ -412,7 +492,7 @@ npm start
 bash start.sh
 ```
 
-Access the dashboard at `http://\<your-ip\>:3000` from any device on the same network.
+Access the dashboard at `http://<your-ip>:3000` from any device on the same network.
 
 ### Option 3: Production Server (systemd)
 
@@ -487,13 +567,13 @@ server {
 
 ## Security
 
-- **SSRF Protection:** The proxy blocks requests to loopback (`127.x.x.x`), private (`10.x.x.x`, `172.16-31.x.x`, `192.168.x.x`), link-local (`169.254.x.x`), and unique-local (`fc00::/7`) addresses. Only public IP addresses and hostnames are allowed through the proxy.
+- **SSRF Protection:** The proxy blocks requests to loopback (`127.x.x.x`, `::1`), link-local (`169.254.x.x`, `fe80::/10`), and unspecified (`0.0.0.0`) addresses. Private network ranges (`10.x.x.x`, `192.168.x.x`, `172.16-31.x.x`) are allowed since the Android device lives on your local WiFi network.
 
 - **Path Traversal Protection:** Static file serving resolves paths and verifies they stay within the project directory.
 
 - **Credentials Storage:** Optional "Remember me" with encrypted local storage.
 
-- **No Data Leaves Your Network:** All SMS traffic stays on your local LAN.
+- **No Data Leaves Your Local Network:** All SMS traffic stays on your LAN when using local mode.
 
 
 ## Troubleshooting
@@ -531,13 +611,6 @@ kill -9 <PID>
 - **Safari (iOS):** Tap the Share button, then "Add to Home Screen"
 - The app runs offline-capable after initial load
 
-### Tauri Desktop App
-
-- **Linux:** Run the AppImage or install the `.deb` package
-- **Windows:** Run the MSI installer
-- **macOS:** Run the DMG installer
-- The app starts automatically and opens a native window
-
 
 ## Browser Support
 
@@ -547,7 +620,6 @@ kill -9 <PID>
 | Firefox | 87+ | ❌ (no PWA) |
 | Safari | 15+ | ✅ iOS Add-to-Home |
 | Edge | 88+ | ✅ Desktop |
-
 
 Requires: CSS Grid, CSS Custom Properties, Optional Chaining (`?.`), `aspect-ratio`, `backdrop-filter`.
 
@@ -561,7 +633,6 @@ Requires: CSS Grid, CSS Custom Properties, Optional Chaining (`?.`), `aspect-rat
 - **Design System:** Custom design tokens with 6 themes
 - **Desktop:** Tauri v2 with embedded HTTP server
 - **Proxy:** Native HTTP client (`reqwest` in Rust / `http`/`https` in Node.js)
-- **IP Validation:** Built-in standard library (`ipnetwork` crate)
 
 
 ## License
@@ -572,4 +643,3 @@ MIT License — see [LICENSE](LICENSE)
 ## Acknowledgments
 
 Built for the [Android SMS Gateway](https://github.com/capcom6/android-sms-gateway) community.
-
