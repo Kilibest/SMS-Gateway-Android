@@ -82,6 +82,7 @@ test-*.html
 .codex
 .skills/
 CLAUDE.md
+RELEASE.md
 .claude/
 .cursor/
 .cursorrules
