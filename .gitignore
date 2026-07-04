@@ -81,6 +81,11 @@ test-*.html
 .agents/
 .codex
 .skills/
+CLAUDE.md
+.claude/
+.cursor/
+.cursorrules
+.windsurfrules
 
 # ── Backup files ─────────────────────────────────────────────────────────
 *.backup
