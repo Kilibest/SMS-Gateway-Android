@@ -359,6 +359,71 @@ impl Database {
         conn.execute("DELETE FROM scheduled_messages WHERE id = ?1", params![id]).unwrap();
     }
 
+    // ── Search Messages ─────────────────────────────────────────────────
+
+    /// Search messages by text content using LIKE.
+    /// Returns results grouped by conversation, newest first.
+    pub fn search_messages(&self, query: &str, limit: usize) -> Vec<SearchResultGroup> {
+        let conn = self.conn.lock().unwrap();
+        let search_term = format!("%{}%", query);
+        let per_conversation = if limit == 0 { 5 } else { limit };
+
+        let max_total = 500i64;
+        let mut stmt = conn.prepare(
+            "SELECT * FROM messages WHERE text LIKE ?1 ORDER BY phone ASC, rawTime DESC LIMIT ?2"
+        ).unwrap();
+
+        let rows: Vec<Message> = stmt.query_map(params![search_term, max_total], |row| {
+            let recipients_str: Option<String> = row.get("recipients")?;
+            Ok(Message {
+                id: row.get("id")?,
+                phone: row.get("phone")?,
+                text: row.get("text")?,
+                msg_type: row.get("type")?,
+                status: row.get("status")?,
+                time: row.get::<_, Option<String>>("time")?.unwrap_or_default(),
+                rawTime: row.get::<_, Option<String>>("rawTime")?.unwrap_or_default(),
+                isGroup: row.get::<_, i32>("isGroup")? != 0,
+                recipients: recipients_str.and_then(|s| serde_json::from_str(&s).ok()),
+                groupName: row.get("groupName")?,
+            })
+        }).unwrap().filter_map(|r| r.ok()).collect();
+
+        // Group by phone number
+        let mut groups_map: std::collections::HashMap<String, SearchResultGroup> = std::collections::HashMap::new();
+
+        for msg in rows {
+            let entry = groups_map.entry(msg.phone.clone()).or_insert_with(|| SearchResultGroup {
+                phone: msg.phone.clone(),
+                isGroup: msg.isGroup,
+                groupName: msg.groupName.clone(),
+                messages: Vec::new(),
+            });
+
+            if entry.messages.len() < per_conversation {
+                entry.messages.push(SearchResultMessage {
+                    id: msg.id,
+                    text: msg.text,
+                    time: msg.time,
+                    rawTime: msg.rawTime,
+                    msg_type: msg.msg_type,
+                    status: msg.status,
+                });
+            }
+        }
+
+        let mut groups: Vec<SearchResultGroup> = groups_map.into_values().collect();
+
+        // Sort by newest message first
+        groups.sort_by(|a, b| {
+            let a_time = a.messages.first().map(|m| &m.rawTime).filter(|s| !s.is_empty()).cloned().unwrap_or_default();
+            let b_time = b.messages.first().map(|m| &m.rawTime).filter(|s| !s.is_empty()).cloned().unwrap_or_default();
+            b_time.cmp(&a_time)
+        });
+
+        groups
+    }
+
     // ── Clear All ───────────────────────────────────────────────────────
 
     pub fn clear_all(&self) {

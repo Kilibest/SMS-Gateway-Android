@@ -209,6 +209,33 @@ pub struct ReceivedMessage {
     pub status: String,
 }
 
+// ── Search Results ───────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub struct SearchResultMessage {
+    pub id: String,
+    pub text: String,
+    pub time: String,
+    pub rawTime: String,
+    pub msg_type: String,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub struct SearchResultGroup {
+    pub phone: String,
+    pub isGroup: bool,
+    pub groupName: Option<String>,
+    pub messages: Vec<SearchResultMessage>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SearchResults {
+    pub results: Vec<SearchResultGroup>,
+}
+
 // ── All Data Response ────────────────────────────────────────────────────
 
 #[derive(Debug, Serialize)]

@@ -63,6 +63,8 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/contacts/import", post(import_contacts_csv))
         // ── Schedule API ────────────────────────────────────────────────
         .route("/api/schedule", post(create_schedule_handler).get(get_schedule_handler).delete(delete_schedule_handler))
+        // ── Message Search ──────────────────────────────────────────────
+        .route("/api/messages/search", get(search_messages_handler))
         // ── System routes ───────────────────────────────────────────────
         .route("/health", get(health_check))
         .route("/webhook", post(webhook_handler))
@@ -375,6 +377,28 @@ async fn delete_schedule_handler(
     }
     state.db.delete_scheduled_message(&query.id);
     Ok(json_ok())
+}
+
+// ── Search Handlers ────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct SearchQuery {
+    pub q: String,
+    pub limit: Option<usize>,
+}
+
+async fn search_messages_handler(
+    State(state): State<AppState>,
+    Query(query): Query<SearchQuery>,
+) -> Response {
+    let q = query.q.trim().to_string();
+    if q.is_empty() {
+        return (StatusCode::BAD_REQUEST, Json(json!({"error": "Missing query parameter: q"}))).into_response();
+    }
+
+    let limit = query.limit.unwrap_or(5);
+    let results = state.db.search_messages(&q, limit);
+    Json(json!({ "results": results })).into_response()
 }
 
 // ── System Handlers ────────────────────────────────────────────────────

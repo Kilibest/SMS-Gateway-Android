@@ -17,6 +17,7 @@ const Storage = {
     groups: {},
     stats: { sent: 0, delivered: 0, failed: 0, received: 0 },
     config: null,
+    archived: undefined,
   },
 
   /**
@@ -115,6 +116,20 @@ const Storage = {
     this._post('/api/data/groups', { groups });
   },
 
+  // ── Archived Conversations ───────────────────────────────────────────
+
+  loadArchived() {
+    if (!this._cache.archived) {
+      this._cache.archived = this._fromLS('archived', []);
+    }
+    return this._cache.archived;
+  },
+
+  saveArchived(archived) {
+    this._cache.archived = archived;
+    this._toLS('archived', archived);
+  },
+
   // ── Config ───────────────────────────────────────────────────────────
 
   loadConfig() {
@@ -153,9 +168,10 @@ const Storage = {
     this._cache.groups = {};
     this._cache.stats = { sent: 0, delivered: 0, failed: 0, received: 0 };
     this._cache.config = null;
+    this._cache.archived = [];
 
     // Clear localStorage
-    const KEYS = ['history', 'templates', 'groups', 'cfg', 'stats'];
+    const KEYS = ['history', 'templates', 'groups', 'cfg', 'stats', 'archived'];
     KEYS.forEach(k => localStorage.removeItem('sms_gateway_' + k));
 
     // Clear server

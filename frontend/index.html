@@ -574,12 +574,19 @@
             <svg class="search__icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
             </svg>
-            <input type="text" class="search__input" id="chatSearch" placeholder="Search conversations..." oninput="filterChats(this.value)">
+            <input type="text" class="search__input" id="chatSearch" placeholder="Search conversations..." oninput="onSearchInput(this.value)">
           </div>
         </div>
 
-        <!-- Chat List -->
-        <div class="sidebar__content">
+        <!-- Search Results (shown when searching) -->
+        <div class="sidebar__search-results hidden" id="searchResults">
+          <div class="search-results__inner" id="searchResultsInner">
+            <!-- Search results populated by JS -->
+          </div>
+        </div>
+
+        <!-- Chat List (hidden when searching) -->
+        <div class="sidebar__content" id="sidebarContent">
           <div class="chat-list" id="chatList">
             <!-- Chat items will be populated by JS -->
           </div>
@@ -682,6 +689,16 @@
               <button class="btn btn--ghost btn--icon" id="editGroupBtn" onclick="openEditGroup()" title="Edit Group" class="hidden">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/>
+                </svg>
+              </button>
+              <button class="btn btn--ghost btn--icon" id="archiveConversationBtn" onclick="archiveConversation(state.activeChat)" title="Archive conversation" style="color:var(--color-text-tertiary);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z"/>
+                </svg>
+              </button>
+              <button class="btn btn--ghost btn--icon" id="deleteConversationBtn" onclick="deleteConversation(state.activeChat)" title="Delete conversation" style="color:var(--error-500);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                 </svg>
               </button>
             </div>
